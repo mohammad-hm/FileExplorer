@@ -1,0 +1,412 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+
+        .folder-input {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+            input[type="text"]:focus {
+                outline: none;
+                border-color: #3498db;
+            }
+
+        button {
+            padding: 12px 25px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+            button:hover {
+                background-color: #2980b9;
+            }
+
+            button:disabled {
+                background-color: #bdc3c7;
+                cursor: not-allowed;
+            }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+
+        .error {
+            background-color: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+
+        .folder-section {
+            background: white;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .folder-header {
+            background-color: #34495e;
+            color: white;
+            padding: 15px 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .folder-path {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #555;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .file-type {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 60px;
+        }
+
+        .type-text {
+            background-color: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .type-markdown {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .type-json {
+            background-color: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .type-binary {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .type-image {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .type-code {
+            background-color: #e0f2f1;
+            color: #00695c;
+        }
+
+        .type-unknown {
+            background-color: #f5f5f5;
+            color: #616161;
+        }
+
+        .no-files {
+            padding: 40px;
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .stats {
+            background-color: #ecf0f1;
+            padding: 10px 20px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        @media (max-width: 768px) {
+            .input-row {
+                flex-direction: column;
+            }
+
+            .container {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📁 File Explorer</h1>
+
+        <div class="folder-input">
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="folder1">Folder 1 Path:</label>
+                    <input type="text" id="folder1" placeholder="e.g., C:\Users\YourName\Documents\Folder1">
+                </div>
+                <div class="input-group">
+                    <label for="folder2">Folder 2 Path:</label>
+                    <input type="text" id="folder2" placeholder="e.g., C:\Users\YourName\Documents\Folder2">
+                </div>
+                <button onclick="loadFiles()" id="loadBtn">Load Files</button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <p>📂 Loading files...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function loadFiles() {
+            const folder1 = document.getElementById('folder1').value;
+            const folder2 = document.getElementById('folder2').value;
+            const loadBtn = document.getElementById('loadBtn');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const results = document.getElementById('results');
+
+            // Clear previous results
+            results.innerHTML = '';
+            error.style.display = 'none';
+            loading.style.display = 'block';
+            loadBtn.disabled = true;
+
+            try {
+                const response = await fetch(`/api/files?folder1Path=${encodeURIComponent(folder1)}&folder2Path=${encodeURIComponent(folder2)}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                loading.style.display = 'none';
+                loadBtn.disabled = false;
+
+                displayResults(data);
+            } catch (err) {
+                loading.style.display = 'none';
+                loadBtn.disabled = false;
+                error.textContent = `Error loading files: ${err.message}`;
+                error.style.display = 'block';
+            }
+        }
+
+        function displayResults(data) {
+            console.log('Displaying results:', data);
+            const results = document.getElementById('results');
+
+            // Display Folder 1 - check for both possible property names
+            const folder1Data = data.Folder1 || data.folder1;
+            if (folder1Data) {
+                console.log('Creating section for Folder1:', folder1Data);
+                results.appendChild(createFolderSection(folder1Data));
+            }
+
+            // Display Folder 2 - check for both possible property names
+            const folder2Data = data.Folder2 || data.folder2;
+            if (folder2Data) {
+                console.log('Creating section for Folder2:', folder2Data);
+                results.appendChild(createFolderSection(folder2Data));
+            }
+
+            if (!folder1Data && !folder2Data) {
+                console.error('No folder data received');
+                const noData = document.createElement('div');
+                noData.className = 'error';
+                noData.textContent = 'No folder data received from server';
+                results.appendChild(noData);
+            }
+        }
+
+        function createFolderSection(folderData) {
+            const section = document.createElement('div');
+            section.className = 'folder-section';
+
+            // Header
+            const header = document.createElement('div');
+            header.className = 'folder-header';
+            header.innerHTML = `
+                        ${folderData.folderName}
+                        <div class="folder-path">📍 ${folderData.path || 'No path specified'}</div>
+                    `;
+            section.appendChild(header);
+
+            if (!folderData.exists) {
+                const noFolder = document.createElement('div');
+                noFolder.className = 'no-files';
+                noFolder.textContent = 'Folder does not exist or path is empty';
+                section.appendChild(noFolder);
+                return section;
+            }
+
+            if (folderData.files.length === 0) {
+                const noFiles = document.createElement('div');
+                noFiles.className = 'no-files';
+                noFiles.textContent = 'No files found in this folder';
+                section.appendChild(noFiles);
+                return section;
+            }
+
+            // Stats
+            const stats = document.createElement('div');
+            stats.className = 'stats';
+            stats.textContent = `📊 ${folderData.files.length} files found`;
+            section.appendChild(stats);
+
+            // Table
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'table-container';
+
+            const table = document.createElement('table');
+            table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>📄 Name</th>
+                                <th>🏷️ Type</th>
+                                <th>📏 Size</th>
+                                <th>📅 Modified</th>
+                                <th>📂 Extension</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${folderData.files.map(file => `
+                                <tr>
+                                       <td title="${file.fullPath}">${file.name}</td>
+                                       <td><span class="file-type ${getTypeClass(file.type)}">${file.type}</span></td>
+                                       <td>${file.sizeFormatted}</td>
+                                       <td>${file.lastModified}</td>
+                                       <td>${file.extension || 'None'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    `;
+
+            tableContainer.appendChild(table);
+            section.appendChild(tableContainer);
+
+            return section;
+        }
+
+        function getTypeClass(type) {
+            const lowerType = type.toLowerCase();
+            if (lowerType.includes('text') || lowerType === 'log') return 'type-text';
+            if (lowerType === 'markdown') return 'type-markdown';
+            if (lowerType === 'json' || lowerType === 'xml') return 'type-json';
+            if (lowerType === 'binary' || lowerType === 'executable') return 'type-binary';
+            if (lowerType.includes('image')) return 'type-image';
+            if (lowerType.includes('code') || lowerType === 'javascript' || lowerType === 'c#' || lowerType === 'python') return 'type-code';
+            return 'type-unknown';
+        }
+
+        // Allow Enter key to trigger load
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                loadFiles();
+            }
+        });
+    </script>
+</body>
+</html>
